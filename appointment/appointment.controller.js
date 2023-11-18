@@ -19,14 +19,20 @@ async function getAllAppointment() {
   }
 }
 
-async function sheduleAppointment() {
+async function sheduleAppointment(direction) {
   const connection = await connectToDatabase();
-
+  console.log(direction);
   try {
-    const rs = await connection.execute(`select * from Employee`);
-    return rs.rows;
+    const rs = await connection.execute(
+      `SELECT * from employer where employer_son not in (select appointment.employer_son from appointment) and employer.direction_id =${direction}`,
+      [],
+      { maxRows: 2 }
+    );
+    const employers = rs.rows;
+    console.log(rs);
+    return employers;
   } catch (error) {
-    console.error("Error in GetAllAppointment :", error.message);
+    console.error("Can't shedule appointment:", error.message);
   } finally {
     if (connection) {
       try {

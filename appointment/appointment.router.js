@@ -1,8 +1,12 @@
 const express = require("express");
-const { getAllAppointmentHandler } = require("./appointment.services");
+const {
+  getAllAppointmentHandler,
+  secheduleAppointmentHandler,
+} = require("./appointment.services");
 
 const router = express.Router();
 
 router.get("/", getAllAppointmentHandler);
+router.post("/add", secheduleAppointmentHandler);
 
 module.exports = router;
