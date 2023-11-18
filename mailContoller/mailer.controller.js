@@ -5,8 +5,18 @@ require("dotenv").config();
 const getBill = (req, res) => {
   const { userEmail } = req.body;
 
-  let transporter = nodemailer.createTransport({
+  /*let transporter = nodemailer.createTransport({
     host: "smtp.office365.com",
+    port: 587,
+    secure: false, // upgrade later with STARTTLS
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.PASSWORD,
+    },
+  });*/
+
+  let transporter = nodemailer.createTransport({
+    host: "Sonatrach.dz",
     port: 587,
     secure: false, // upgrade later with STARTTLS
     auth: {

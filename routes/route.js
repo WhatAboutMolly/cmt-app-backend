@@ -1,6 +1,6 @@
 const router = require("express").Router();
 //const { getBill } = require("../contoller/appController");
-const { getBill } = require("../contoller/mailer.controller.js");
+const { getBill } = require("../mailContoller/mailer.controller.js");
 
 router.post("/product/getbill", getBill);
 
