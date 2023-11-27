@@ -9,7 +9,7 @@ const connectToDatabase = async function connect() {
 
     console.log("Successfully connected to Oracle Database");
   } catch (err) {
-    console.error(err);
+    console.error("error", err);
   }
   return connection;
 

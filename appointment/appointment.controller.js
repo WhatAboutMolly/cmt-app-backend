@@ -30,8 +30,10 @@ async function checkAvailability(connection, day, start) {
   console.log(sql);
   try {
     const rs = await connection.execute(sql);
+    console.log(rs.rows.length);
     console.log(rs.rows[0][1]);
-    return rs.rows[0][1];
+    if (rs.rows.length == 0 || rs.rows[0][1] == "Y") return true;
+    else return false;
   } catch (error) {
     console.error("Can't check availability of timeslot :", error.message);
   }
@@ -64,7 +66,6 @@ async function InsertTimeSlot(connection, day, start) {
     VALUES (TO_DATE(:day, 'DD/MM/YY') , INTERVAL '${start.format(
       "hh:mm"
     )}' HOUR TO MINUTE, 'N')`;
-
     const insertOptions = {
       autoCommit: true,
       outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -72,10 +73,10 @@ async function InsertTimeSlot(connection, day, start) {
 
     const binds = [day.format("DD/MM/YY")];
     console.log(binds);
-
     const insertRs = await connection.execute(sql1, binds, insertOptions);
     console.log(insertRs.lastRowid);
-    return insertRs.lastRowid;
+
+    return insertRs;
   } catch (error) {
     console.error("Can't shedule appointment:", error.message);
   }
@@ -90,36 +91,51 @@ async function sheduleAppointment(day) {
   let start = moment("08:45", "h:mm");
 
   console.log("start1", start.minute());
-  selectEmployers(connection).then((selectedEmployers) => {
+  return selectEmployers(connection).then((selectedEmployers) => {
     for (employer in selectedEmployers) {
       start.add(15, "minutes");
       console.log("start2", start);
-      checkAvailability(connection, day, start).then(async (avaibleStatus) => {
-        console.log("avaibleStatus", avaibleStatus);
-        if (avaibleStatus == "Y") {
-          try {
-            InsertTimeSlot(connection, day, start).then(async (ts_id) => {
-              const sql2 = `INSERT INTO appointment (employer_son, timeslot_id, status , appointment_type)  VALUES (${employer.employer_son}, ${ts_id}, 'Scheduled' , 'N')`;
+      return checkAvailability(connection, day, start).then(
+        async (avaibleStatus) => {
+          console.log("avaibleStatus", avaibleStatus);
+          if (avaibleStatus == true) {
+            try {
+              return InsertTimeSlot(connection, day, start).then(
+                async (rowid) => {
+                  const options = {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                    maxRows: 1,
+                  };
 
-              const insertRs = await connection.execute(
-                sql2,
-                [],
-                insertOptions
+                  const ts_sql = `SELECT * FROM timeslot`;
+
+                  const rs = await connection.execute(ts_sql);
+
+                  console.log("rowid", rs.rows);
+
+                  const sql2 = `INSERT INTO appointment (employer_son, timeslot_id, status , appointment_type)  VALUES (${employer.employer_son}, ${ts_id}, 'Scheduled' , 'N')`;
+
+                  const insertRs = await connection.execute(
+                    sql2,
+                    [],
+                    insertOptions
+                  );
+                }
               );
-            });
-          } catch (error) {
-            console.error("Can't shedule appointment:", error.message);
-          } finally {
-            if (connection) {
-              try {
-                await connection.close();
-              } catch (error) {
-                console.error("Can't close the connexion", error.message);
+            } catch (error) {
+              console.error("Can't shedule appointment:", error.message);
+            } finally {
+              if (connection) {
+                try {
+                  await connection.close();
+                } catch (error) {
+                  console.error("Can't close the connexion", error.message);
+                }
               }
             }
           }
         }
-      });
+      );
     }
   });
 }
