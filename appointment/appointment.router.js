@@ -8,5 +8,6 @@ const router = express.Router();
 
 router.get("/", getAllAppointmentHandler);
 router.post("/add", secheduleAppointmentHandler);
+secheduleAppointmentHandler();
 
 module.exports = router;
