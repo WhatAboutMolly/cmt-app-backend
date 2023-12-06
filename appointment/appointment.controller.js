@@ -5,9 +5,16 @@ const oracledb = require("oracledb");
 
 async function getAllAppointment() {
   const connection = await connectToDatabase();
+  const options = {
+    outFormat: oracledb.OUT_FORMAT_OBJECT,
+  };
 
   try {
-    const rs = await connection.execute(`select * from doctor`);
+    const rs = await connection.execute(
+      `select * from appointment`,
+      [],
+      options
+    );
     return rs.rows;
   } catch (error) {
     console.error("Error in GetAllAppointment :", error.message);
@@ -55,7 +62,7 @@ async function selectEmployers(connection) {
     console.log("rs.rows", rs.rows);
     return rs.rows;
   } catch (error) {
-    console.error("Can't shedule appointment:", error.message);
+    console.error("Can't get Employers:", error.message);
   }
 }
 
@@ -76,9 +83,33 @@ async function InsertTimeSlot(connection, day, start) {
     const insertRs = await connection.execute(sql1, binds, insertOptions);
     console.log(insertRs.lastRowid);
 
-    return insertRs;
+    return insertRs.lastRowid;
   } catch (error) {
-    console.error("Can't shedule appointment:", error.message);
+    console.error("Can't reserve timeSlot:", error.message);
+  }
+}
+
+async function InsertAppointment(connection, rowId, employer) {
+  const options = {
+    outFormat: oracledb.OUT_FORMAT_OBJECT,
+    maxRows: 1,
+  };
+  const insertOptions = {
+    autoCommit: true,
+    outFormat: oracledb.OUT_FORMAT_OBJECT,
+  };
+  console.log("rowid", rowId);
+  try {
+    const ts_sql = `SELECT timeslot_id FROM timeslot where ROWID = '${rowId}'`;
+
+    const rs = await connection.execute(ts_sql, [], options);
+    const ts_id = rs.rows[0].TIMESLOT_ID;
+
+    const sql2 = `INSERT INTO appointment (employer_son, timeslot_id, status , appointment_type)  VALUES ('${employer.EMPLOYER_SON}', '${ts_id}', 'Scheduled' , 'N')`;
+
+    const insertRs = await connection.execute(sql2, [], insertOptions);
+  } catch (error) {
+    console.error("Can't add new appointment:", error.message);
   }
 }
 
@@ -98,10 +129,11 @@ async function sheduleAppointment(day) {
       return checkAvailability(connection, day, start).then(
         async (avaibleStatus) => {
           console.log("avaibleStatus", avaibleStatus);
-          if (avaibleStatus == true) {
+          if (avaibleStatus == false) {
             try {
               return InsertTimeSlot(connection, day, start).then(
                 async (rowid) => {
+                  console.log("here");
                   const options = {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
                     maxRows: 1,
@@ -168,9 +200,43 @@ async function insertIntoDatabase() {
   }
 }
 
+async function setToEncours(appointmentDetails) {
+  const connection = await connectToDatabase();
+
+  try {
+    /*
+    const sql = `UPDATE Appointment SET status = 'On going', observation = '${appointmentDetails.observation}', doctor_son = '${appointmentDetails.doctor_son}' WHERE appointment_id = ${appointmentDetails.id}`;
+
+    const binds = [];
+    const options = { autoCommit: true, outFormat: oracledb.OUT_FORMAT_OBJECT };
+    console.log(sql);*/
+
+    const insertRs = await connection.execute(
+      "UPDATE Appointment SET status = 'On going',  doctor_son = 'son9281' WHERE appointment_id = 97",
+      {},
+      { autoCommit: true }
+    );
+    console.log("end");
+    console.log(insertRs.affectedrows);
+    console.log("Insertion réussie dans la base de données");
+  } catch (error) {
+    console.error("Erreur lors de l'insertion dans la base de données:", error);
+  } finally {
+  }
+}
+
 // Planifier la tâche cron toutes les 2 minutes
 /**cron.schedule("*2 * * * *", () => {
   console.log("Exécution de la tâche cron...");
   insertIntoDatabase();
 });*/
-module.exports = { getAllAppointment, sheduleAppointment, insertIntoDatabase };
+module.exports = {
+  getAllAppointment,
+  sheduleAppointment,
+  insertIntoDatabase,
+  checkAvailability,
+  selectEmployers,
+  InsertTimeSlot,
+  InsertAppointment,
+  setToEncours,
+};

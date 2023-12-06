@@ -1,9 +1,14 @@
 const {
   getAllAppointment,
   sheduleAppointment,
+  checkAvailability,
+  selectEmployers,
+  InsertTimeSlot,
+  InsertAppointment,
 } = require("./appointment.controller");
 const { CronJob } = require("cron");
 var moment = require("moment");
+const { connectToDatabase } = require("../database.js");
 
 function getAllAppointmentHandler(req, res) {
   getAllAppointment()
@@ -15,12 +20,30 @@ function getAllAppointmentHandler(req, res) {
     });
 }
 var error;
-function secheduleAppointmentHandler(req, res) {
-  const today = moment(new Date(), "DD/MM/YYYY");
+async function secheduleAppointmentHandler(req, res) {
+  const connection = await connectToDatabase();
+  const today = moment("27/11/23", "DD/MM/YYYY");
+  let start = moment("08:45", "h:mm");
   console.log("day", today);
-  sheduleAppointment(today).then((data) => {
-    console.log("data", data);
+
+  selectEmployers(connection).then((selectedEmployers) => {
+    selectedEmployers.map((employer) => {
+      console.log("employer", employer);
+      start.add(15, "minutes");
+      console.log("start2", start);
+      checkAvailability(connection, today, start).then((avaibleStatus) => {
+        if (avaibleStatus == true) {
+          InsertTimeSlot(connection, today, start).then((rowId) => {
+            InsertAppointment(connection, rowId, employer).then();
+          });
+        }
+      });
+    });
   });
+
+  /*sheduleAppointment(today).then((data) => {
+    console.log("data", data);
+  });*/
   /*const job = new CronJob(
     " * 1 * * *", // cronTime
 
