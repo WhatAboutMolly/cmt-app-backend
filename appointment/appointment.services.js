@@ -5,6 +5,7 @@ const {
   selectEmployers,
   InsertTimeSlot,
   InsertAppointment,
+  setToEncours,
 } = require("./appointment.controller");
 const { CronJob } = require("cron");
 var moment = require("moment");
@@ -17,6 +18,20 @@ function getAllAppointmentHandler(req, res) {
     })
     .catch((err) => {
       res.status(404).send("Appointments not found ! ", err);
+    });
+}
+
+function setToEncoursHandler(req, res) {
+  let appointmentDetails = req.body;
+
+  console.log(appointmentDetails);
+
+  setToEncours(appointmentDetails)
+    .then((appointment) => {
+      res.send(appointment);
+    })
+    .catch((err) => {
+      res.status(404).send("Can't update appointment ", err);
     });
 }
 var error;
@@ -64,4 +79,8 @@ async function secheduleAppointmentHandler(req, res) {
   job.start();*/
 }
 
-module.exports = { getAllAppointmentHandler, secheduleAppointmentHandler };
+module.exports = {
+  getAllAppointmentHandler,
+  secheduleAppointmentHandler,
+  setToEncoursHandler,
+};
