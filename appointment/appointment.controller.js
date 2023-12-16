@@ -73,6 +73,8 @@ async function selectEmployers(connection) {
 
 async function InsertTimeSlot(connection, day, start) {
   console.log("we made it here");
+  console.log(day);
+  console.log(start);
   try {
     const sql1 = `INSERT INTO TIMESLOT (appointment_day , START_TIME ) 
     VALUES (TO_DATE(:day, 'DD/MM/YY') , INTERVAL '${start.format(
@@ -94,7 +96,7 @@ async function InsertTimeSlot(connection, day, start) {
   }
 }
 
-async function InsertAppointment(connection, rowId, employer) {
+async function InsertAppointment(connection, rowId, employer_son) {
   const options = {
     outFormat: oracledb.OUT_FORMAT_OBJECT,
     maxRows: 1,
@@ -103,14 +105,14 @@ async function InsertAppointment(connection, rowId, employer) {
     autoCommit: true,
     outFormat: oracledb.OUT_FORMAT_OBJECT,
   };
-  console.log("rowid", rowId);
+  console.log("employer_son", employer_son);
   try {
     const ts_sql = `SELECT timeslot_id FROM timeslot where ROWID = '${rowId}'`;
 
     const rs = await connection.execute(ts_sql, [], options);
     const ts_id = rs.rows[0].TIMESLOT_ID;
 
-    const sql2 = `INSERT INTO appointment (employer_son, timeslot_id, status , appointment_type)  VALUES ('${employer.EMPLOYER_SON}', '${ts_id}', 'Scheduled' , 'N')`;
+    const sql2 = `INSERT INTO appointment (employer_son, timeslot_id, status , appointment_type)  VALUES ('${employer_son}', '${ts_id}', 'Scheduled' , 'N')`;
 
     const insertRs = await connection.execute(sql2, [], insertOptions);
   } catch (error) {

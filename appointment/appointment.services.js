@@ -74,6 +74,8 @@ async function secheduleAppointmentHandler(req, res) {
       console.log("here");
       selectEmployers(connection).then((selectedEmployers) => {
         selectedEmployers.map((employer, i) => {
+          const employer_son = employer.EMPLOYER_SON;
+          console.log(employer_son);
           const newStart = start.clone().add(15 * i, "minutes");
           checkAvailability(connection, Date, newStart).then(
             ({ availability, startTime }) => {
@@ -82,7 +84,7 @@ async function secheduleAppointmentHandler(req, res) {
               );
               if (availability == true) {
                 InsertTimeSlot(connection, Date, startTime).then((rowId) => {
-                  InsertAppointment(connection, rowId, employer).then();
+                  InsertAppointment(connection, rowId, employer_son).then();
                 });
               }
             }
@@ -94,32 +96,30 @@ async function secheduleAppointmentHandler(req, res) {
     }
   );
   job.start();
-
-  /*sheduleAppointment(today).then((data) => {
-    console.log("data", data);
-  });*/
-  /*const job = new CronJob(
-    " * 1 * * *", // cronTime
-
-    function () {
-      console.log("here");
-      sheduleAppointment(direction)
-        .then(() => {
-          //res.status(201).send("appointments added... ! ");
-        })
-        .catch((err) => {
-          //res.status(404).send("Appointments not found ! ");
-          console.log(err);
-        }),
-        null, // onComplete
-        true; // start
-    }
-  );
-  job.start();*/
 }
 
+async function addAppointmentHandler(req, res) {
+  const connection = await connectToDatabase();
+
+  let { day, startTime, employer_son } = req.body;
+
+  let start = moment(startTime, "h:mm");
+  let date = moment(day, "DD/MM/YY");
+
+  checkAvailability(connection, date, start).then(({ availability }) => {
+    console.log(availability + " " + "start" + " " + start.format("h:mm"));
+    if (availability == true) {
+      InsertTimeSlot(connection, date, start).then((rowId) => {
+        InsertAppointment(connection, rowId, employer_son).then(
+          res.status(200).send("appointment added successfully !!")
+        );
+      });
+    }
+  });
+}
 module.exports = {
   getAllAppointmentHandler,
   secheduleAppointmentHandler,
   updateAppointmentHandler,
+  addAppointmentHandler,
 };
