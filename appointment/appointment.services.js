@@ -1,12 +1,12 @@
 const {
   getAllAppointment,
-  sheduleAppointment,
   checkAvailability,
   selectEmployers,
   InsertTimeSlot,
   InsertAppointment,
-  setToEncours,
+  updateAppointment,
 } = require("./appointment.controller");
+
 const { CronJob } = require("cron");
 var moment = require("moment");
 const { connectToDatabase } = require("../database.js");
@@ -21,12 +21,26 @@ function getAllAppointmentHandler(req, res) {
     });
 }
 
-function setToEncoursHandler(req, res) {
+function updateAppointmentHandler(req, res) {
   let appointmentDetails = req.body;
 
   console.log(appointmentDetails);
 
-  setToEncours(appointmentDetails)
+  updateAppointment(appointmentDetails)
+    .then((appointment) => {
+      res.send(appointment);
+    })
+    .catch((err) => {
+      res.status(404).send({ message: "Can't update appointment " + err });
+    });
+}
+
+async function setToTermineHandler(req, res) {
+  let appointmentDetails = req.body;
+
+  console.log(appointmentDetails);
+
+  setToTermine(appointmentDetails)
     .then((appointment) => {
       res.send(appointment);
     })
@@ -34,27 +48,52 @@ function setToEncoursHandler(req, res) {
       res.status(404).send("Can't update appointment ", err);
     });
 }
-var error;
+async function setToManqueHandler(req, res) {
+  let appointmentDetails = req.body;
+
+  console.log(appointmentDetails);
+
+  setToTManque(appointmentDetails)
+    .then((appointment) => {
+      res.send(appointment);
+    })
+    .catch((err) => {
+      res.status(404).send("Can't update appointment ", err);
+    });
+}
+
 async function secheduleAppointmentHandler(req, res) {
   const connection = await connectToDatabase();
-  const today = moment("27/11/23", "DD/MM/YYYY");
-  let start = moment("08:45", "h:mm");
-  console.log("day", today);
 
-  selectEmployers(connection).then((selectedEmployers) => {
-    selectedEmployers.map((employer) => {
-      console.log("employer", employer);
-      start.add(15, "minutes");
-      console.log("start2", start);
-      checkAvailability(connection, today, start).then((avaibleStatus) => {
-        if (avaibleStatus == true) {
-          InsertTimeSlot(connection, today, start).then((rowId) => {
-            InsertAppointment(connection, rowId, employer).then();
-          });
-        }
-      });
-    });
-  });
+  let start = moment("9:00", "h:mm");
+  const job = new CronJob(
+    "*/1 * * * *", // cronTime
+
+    function () {
+      let Date = moment().add(14, "days");
+      console.log("here");
+      selectEmployers(connection).then((selectedEmployers) => {
+        selectedEmployers.map((employer, i) => {
+          const newStart = start.clone().add(15 * i, "minutes");
+          checkAvailability(connection, Date, newStart).then(
+            ({ availability, startTime }) => {
+              console.log(
+                availability + " " + "start" + " " + startTime.format("h:mm")
+              );
+              if (availability == true) {
+                InsertTimeSlot(connection, Date, startTime).then((rowId) => {
+                  InsertAppointment(connection, rowId, employer).then();
+                });
+              }
+            }
+          );
+        });
+      }),
+        null, // onComplete
+        true; // start
+    }
+  );
+  job.start();
 
   /*sheduleAppointment(today).then((data) => {
     console.log("data", data);
@@ -82,5 +121,5 @@ async function secheduleAppointmentHandler(req, res) {
 module.exports = {
   getAllAppointmentHandler,
   secheduleAppointmentHandler,
-  setToEncoursHandler,
+  updateAppointmentHandler,
 };
